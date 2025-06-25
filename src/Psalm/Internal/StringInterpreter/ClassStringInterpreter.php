@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace Psalm\Internal\StringInterpreter;
 
 use Override;
+use Psalm\Internal\Codebase\Reflection;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Plugin\EventHandler\StringInterpreterInterface;
-use Psalm\Internal\Codebase\Reflection;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
+use ReflectionClass;
+use ReflectionException;
+
+use function class_exists;
+use function enum_exists;
+use function interface_exists;
+use function ltrim;
+use function strtolower;
+use function trait_exists;
 
 /**
  * @internal
@@ -28,12 +37,16 @@ final class ClassStringInterpreter implements StringInterpreterInterface
         $codebase = $event->getCodebase();
         $value_lc = strtolower($value);
 
-        if ($codebase->classlikes->doesClassLikeExist($value_lc)) {
+        // Bunch of _exists() to make $value match the type class-string|object|trait-string
+        if ((class_exists($value) || interface_exists($value) || enum_exists($value) || trait_exists($value)) &&
+            $codebase->classlikes->doesClassLikeExist($value_lc)) {
             if (!$codebase->classlike_storage_provider->has($value)) {
                 $reflection = new Reflection($codebase->classlike_storage_provider, $codebase);
                 try {
-                    $reflection->registerClass(new \ReflectionClass($value));
-                } catch (\ReflectionException) {
+                    $reflection->registerClass(new ReflectionClass($value));
+                } catch (ReflectionException) {
+                    // `new ReflectionClass()` only throws if the class, interface, enum, or trait does not exist.
+                    // Which we check, so this should never happen.
                     return null;
                 }
             }
