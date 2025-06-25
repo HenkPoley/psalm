@@ -4,7 +4,15 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\StringInterpreter;
 
+use AssertionError;
+use Exception;
+use InvalidArgumentException;
+use LogicException;
 use Override;
+use Psalm\Exception\CodeException;
+use Psalm\Exception\TypeParseTreeException;
+use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
 use Psalm\Plugin\EventHandler\StringInterpreterInterface;
@@ -12,6 +20,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use ReflectionClass;
 use ReflectionException;
+use UnexpectedValueException;
 
 use function class_exists;
 use function enum_exists;
@@ -25,6 +34,17 @@ use function trait_exists;
  */
 final class ClassStringInterpreter implements StringInterpreterInterface
 {
+    /**
+     * @throws AssertionError
+     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws CodeException
+     * @throws TypeParseTreeException
+     * @throws UnpopulatedClasslikeException
+     * @throws UnresolvableConstantException
+     * @throws UnexpectedValueException
+     */
     #[Override]
     public static function getTypeFromValue(StringInterpreterEvent $event): ?TLiteralString
     {
