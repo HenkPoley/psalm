@@ -90,6 +90,47 @@ final class ConstantTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'constantViaClassStringOfFinalClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const C = 1;
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): int {
+                        return $class::C;
+                    }',
+            ],
+            'constantViaGetClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const C = 1;
+                    }
+
+                    function f(A $a): int {
+                        $class = get_class($a);
+                        return $class::C;
+                    }',
+            ],
+            'constantViaClassStringUsesDeclaredTypeWhenOverridable' => [
+                'code' => '<?php
+                    class A {
+                        /** @var int */
+                        public const DOCBLOCK_TYPED = 1;
+                        final public const FINAL = 2;
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): void {
+                        $docblock_typed = $class::DOCBLOCK_TYPED;
+                        $final = $class::FINAL;
+                        /** @psalm-check-type-exact $docblock_typed = int */
+                        /** @psalm-check-type-exact $final = 2 */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'constantInFunction' => [
                 'code' => '<?php
                     useTest();
@@ -2168,6 +2209,47 @@ final class ConstantTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedConstantViaClassString' => [
+                'code' => '<?php
+                    final class A {
+                        public const C = 1;
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): void {
+                        echo $class::NOPE;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'privateConstantViaClassString' => [
+                'code' => '<?php
+                    final class A {
+                        private const C = 1;
+                    }
+
+                    /** @param class-string<A> $class */
+                    function f(string $class): int {
+                        return $class::C;
+                    }',
+                'error_message' => 'InaccessibleClassConstant',
+            ],
+            'undefinedConstantViaPropertyFetchedObject' => [
+                'code' => '<?php
+                    final class A {
+                        public const C = 1;
+                    }
+
+                    final class Holder {
+                        public function __construct(public A $a) {}
+                    }
+
+                    function f(Holder $holder): void {
+                        echo $holder->a::NOPE;
+                    }',
+                'error_message' => 'UndefinedConstant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'constantDefinedInFunctionButNotCalled' => [
                 'code' => '<?php
                     /**

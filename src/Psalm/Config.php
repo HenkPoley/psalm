@@ -2075,7 +2075,6 @@ final class Config
             return self::REPORT_ERROR;
         }
 
-        /** @var int */
         $issue_level = $issue_class::ERROR_LEVEL;
 
         if ($issue_level > 0 && $issue_level < $this->level) {
